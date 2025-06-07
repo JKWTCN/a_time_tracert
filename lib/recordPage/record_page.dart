@@ -18,7 +18,7 @@ class _RecordPageState extends State<RecordPage> {
   final GlobalKey<AllNowWorkWidgetState> allNowWorkKey = GlobalKey();
   final GlobalKey<AllTimeTypeWidgetState> allTimeTypeKey = GlobalKey();
   List<Widget> allWork = [];
-  var time;
+  dynamic time;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

@@ -1,3 +1,5 @@
+import 'package:a_time_tracert/kindPage/color_picker_page.dart';
+import 'package:a_time_tracert/kindPage/icon_picker_page.dart';
 import 'package:flutter/material.dart';
 // import '../db_helper.dart';
 
@@ -74,7 +76,10 @@ class _CreateActivityGroupState extends State<CreateActivityGroupPage> {
 
               InkWell(
                 onTap: () {
-                  // todo 跳转创建活动组
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => IconPickerPage()),
+                  );
                 },
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +101,10 @@ class _CreateActivityGroupState extends State<CreateActivityGroupPage> {
               const SizedBox(height: 16),
               InkWell(
                 onTap: () {
-                  // todo 跳转创建活动组
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ColorPickerPage()),
+                  );
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
