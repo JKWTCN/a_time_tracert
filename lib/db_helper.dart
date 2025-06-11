@@ -5,21 +5,37 @@ import 'package:uuid/uuid.dart';
 import 'tools.dart';
 import 'dart:developer' as developer;
 
-// 初始化数据库
+///保存活动组
+///```
+///name: 活动组名称
+///icon: 活动组图标
+///color: 活动组颜色
+///```
+Future<void> saveActivityGroup(String name, IconData icon, Color color) async {
+  Database db = await createTable();
+  var uuid = const Uuid();
+  String nowUuid = uuid.v4();
+  await db.rawInsert(
+    'INSERT INTO time_type ( id, guid, name, imageGuid, A, R, G, B, ISGROUP ) VALUES ( NULL, ?, ?, ?, ?, ?, ?, ?, ? );',
+    [nowUuid, name, icon, color.red, color.green, color.blue, color.alpha, 1],
+  );
+}
+
+/// 初始化数据库
 Future<Database> createTable() async {
   Database database = await openDatabase(
     join(await getDatabasesPath(), 'my_time_app.db'),
     version: 1,
     onCreate: (db, version) {
       return db.execute(
-        "CREATE TABLE time_intervals ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, [start] INTEGER, [end]  INTEGER, interval_guid TEXT ); CREATE TABLE time_record ( id  INTEGER PRIMARY KEY AUTOINCREMENT, guid TEXT, comment TEXT,type_guid TEXT); CREATE TABLE time_type ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, name  TEXT, imageGuid TEXT, A  INTEGER, R  INTEGER, G  INTEGER, B  INTEGER );",
+        "CREATE TABLE time_intervals ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, [start] INTEGER, [end]  INTEGER, interval_guid TEXT ); CREATE TABLE time_record ( id  INTEGER PRIMARY KEY AUTOINCREMENT, guid TEXT, comment TEXT,type_guid TEXT); CREATE TABLE time_type ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, name  TEXT, imageGuid TEXT, A  INTEGER, R  INTEGER, G  INTEGER, B  INTEGER ,ISGROUP BOOL);",
       );
     },
   );
   return database;
 }
 
-// 完成某项
+/// 完成某项
 void finishTimeType(String guid) async {
   Database db = await createTable();
   await db.rawUpdate('UPDATE time_intervals SET end = ? WHERE guid = ?', [
@@ -28,7 +44,7 @@ void finishTimeType(String guid) async {
   ]);
 }
 
-// 获取某个项目的所有时间记录
+/// 获取某个项目的所有时间记录
 Future<int> findTimeRecord(String guid) async {
   num allTime = 0;
   Database db = await createTable();
@@ -45,9 +61,8 @@ Future<int> findTimeRecord(String guid) async {
   }
   return allTime.toInt();
 }
-//
 
-// 添加正在进行
+/// 添加正在进行
 Future<String> addTimeType(String imageGuid) async {
   Database db = await createTable();
   var uuid = const Uuid();
@@ -64,7 +79,7 @@ Future<String> addTimeType(String imageGuid) async {
   return nowUuid;
 }
 
-// 读取所有正在进行的
+/// 读取所有正在进行的
 Future<List<Widget>> findAllNoWork(BuildContext context) async {
   Database db = await createTable();
   List<Widget> result = [];
@@ -110,7 +125,7 @@ Future<List<Widget>> findAllNoWork(BuildContext context) async {
   return result;
 }
 
-// 读取所有时间类型列表
+/// 读取所有时间类型列表
 Future<List<Widget>> findAllTimeType(BuildContext context) async {
   Database db = await createTable();
   List<Map> list = await db.rawQuery('SELECT * FROM time_type');

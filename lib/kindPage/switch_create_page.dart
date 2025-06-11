@@ -70,7 +70,10 @@ class _SwitchCreatePageState extends State<SwitchCreatePage> {
                     MaterialPageRoute(
                       builder: (context) => CreateActivityGroupPage(),
                     ),
-                  );
+                  ).then((value) {
+                    // todo 刷新数据
+                    setState(() {});
+                  });
                 },
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

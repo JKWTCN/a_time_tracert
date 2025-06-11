@@ -27,7 +27,17 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
         '#${redValue.toInt().toRadixString(16).padLeft(2, '0')}${greenValue.toInt().toRadixString(16).padLeft(2, '0')}${blueValue.toInt().toRadixString(16).padLeft(2, '0')}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('RGB颜色选择')),
+      appBar: AppBar(
+        title: const Text('RGB颜色选择'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              Navigator.pop(context, selectedColor);
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -61,8 +71,8 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-            // 红色滑块
+            const SizedBox(height: 16),
+            // 绿色滑块
             _buildColorSlider(
               label: '红',
               value: redValue,

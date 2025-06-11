@@ -116,6 +116,7 @@ class _IconPickerPageState extends State<IconPickerPage> {
                   onTap: () {
                     setState(() {
                       _selectedIcon = icon;
+                      Navigator.pop(context, _selectedIcon);
                     });
                   },
 
@@ -124,12 +125,13 @@ class _IconPickerPageState extends State<IconPickerPage> {
                     children: [
                       Icon(icon, size: 30),
                       const SizedBox(height: 8),
-                      Text(
-                        icon.toString().split('.')[0],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 10),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+
+                      // Text(
+                      //   icon.toString().split('.')[0],
+                      //   textAlign: TextAlign.center,
+                      //   style: const TextStyle(fontSize: 10),
+                      //   overflow: TextOverflow.ellipsis,
+                      // ),
                     ],
                   ),
                 );
