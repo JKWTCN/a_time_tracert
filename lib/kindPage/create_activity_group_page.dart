@@ -54,6 +54,13 @@ class _CreateActivityGroupState extends State<CreateActivityGroupPage> {
               onPressed: () async {
                 if (isColorSelected && isIconSelected) {
                   // 保存数据
+                  if (myController.text.isEmpty) {
+                    // 如果名称为空，提示用户
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("名称不能为空")));
+                    return;
+                  }
                   await saveActivityGroup(
                     myController.text,
                     selectedIcon!,
