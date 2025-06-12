@@ -45,8 +45,8 @@ class _RecordPageState extends State<RecordPage> {
     allNowWorkKey.currentState?.allWork = await findAllNoWork(context);
     allNowWorkKey.currentState?.setState(() {});
     if (!mounted) return;
-    allNowWorkKey.currentState?.allWork = await findAllTimeType(context);
-    allNowWorkKey.currentState?.setState(() {});
+    allTimeTypeKey.currentState?.allWork = await findAllTimeType(context);
+    allTimeTypeKey.currentState?.setState(() {});
   }
 
   @override

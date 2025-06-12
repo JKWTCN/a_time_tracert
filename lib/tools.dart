@@ -5,17 +5,14 @@ import 'package:flutter/services.dart';
 
 /// 快捷返回图标
 Future<Icon> returnIconMaterial(
-  String imageGuid,
+  int codePoint,
   int A,
   int R,
   int G,
   int B,
 ) async {
-  Map<String, dynamic> jsonData = await loadJsonFromAssets(
-    'data/imageGuid.json',
-  );
   return Icon(
-    IconData(jsonData[imageGuid], fontFamily: 'MaterialIcons'),
+    IconData(codePoint, fontFamily: 'MaterialIcons'),
     color: Color.fromARGB(A, R, G, B),
   );
 }
