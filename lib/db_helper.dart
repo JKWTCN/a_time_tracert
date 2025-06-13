@@ -5,6 +5,9 @@ import 'package:uuid/uuid.dart';
 import 'tools.dart';
 import 'dart:developer' as developer;
 
+///项目状态枚举
+enum TimeStatus { start, pause, stop }
+
 ///保存活动类型
 ///```
 ///name: 活动类型名称
@@ -71,13 +74,13 @@ Future<Database> createTable() async {
     onCreate: (db, version) {
       ///一个time_record可以由多个time_intervals组成
       db.execute(
-        "CREATE TABLE time_record ( id  INTEGER PRIMARY KEY AUTOINCREMENT, guid TEXT, comment TEXT,type_guid TEXT,isFinish BOOL); ",
+        "CREATE TABLE time_record ( id  INTEGER PRIMARY KEY AUTOINCREMENT, guid TEXT, comment TEXT,type_guid TEXT,status int); ",
       );
 
-      ///时间类型  interval_guid是time_record的type_guid，用来区分time_intervals属于哪一个time_record
-      ///end为空代表没有结束
+      ///时间类型  record_guid是time_record的type_guid，用来区分time_intervals属于哪一个time_record
+      ///end为-1代表没有结束
       db.execute(
-        "CREATE TABLE time_intervals ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, [start] INTEGER, [end]  INTEGER, interval_guid TEXT ); ",
+        "CREATE TABLE time_intervals ( id INTEGER PRIMARY KEY AUTOINCREMENT, guid  TEXT, [start] INTEGER, [end]  INTEGER, record_guid TEXT ); ",
       );
 
       /// 时间类型，如果isIcon==true, imageId存储图标的codePoint,如果isIcon==false, imageId存储图标在Icon表里面的id
@@ -96,38 +99,62 @@ Future<Database> createTable() async {
 }
 
 ///判断某项是否正在进行
-Future<bool> isTimeTypeRunning(String guid) async {
+///
+/// [timeRecordGuid] time_record的guid
+Future<bool> isTimeTypeRunning(String timeRecordGuid) async {
   Database db = await createTable();
   List<Map> result = await db.rawQuery(
-    'SELECT * FROM time_intervals WHERE guid = ? AND end = -1;',
-    [guid],
+    'SELECT * FROM time_record WHERE guid = ? and status = ?;',
+    [timeRecordGuid, TimeStatus.start.index],
   );
   return result.isNotEmpty;
 }
 
 /// 暂停某项
-void pauseTimeType(String guid) async {
+///
+/// [timeRecordGuid] time_record的guid
+void pauseTimeType(String timeRecordGuid) async {
   Database db = await createTable();
-
-  await db.rawUpdate('UPDATE time_intervals SET end = ? WHERE guid = ?', [
-    1 * nowTimeStamp(),
-    guid,
+  await db.rawUpdate('UPDATE time_record SET status = ? WHERE guid = ?;', [
+    TimeStatus.pause.index,
+    timeRecordGuid,
   ]);
+  await db.rawUpdate(
+    'UPDATE time_intervals SET end = ? WHERE guid = ? and end=-1;',
+    [nowTimeStamp(), timeRecordGuid],
+  );
+}
+
+/// 解除暂停某项
+///
+/// [timeRecordGuid] time_record的guid
+void antiPauseTimeType(String timeRecordGuid) async {
+  Database db = await createTable();
+  await db.rawUpdate('UPDATE time_record SET status = ? WHERE guid = ?;', [
+    TimeStatus.start.index,
+    timeRecordGuid,
+  ]);
+
+  /// 创建新的项目
+  var uuid = const Uuid();
+  String intervalUuid = uuid.v4();
+  await db.rawInsert(
+    "INSERT INTO time_intervals ( id, guid, [start], [end], record_guid ) VALUES ( NULL, ?, ?, -1, ? );",
+    [intervalUuid, nowTimeStamp(), timeRecordGuid],
+  );
 }
 
 /// 完成某项
-void finishTimeType(String guid) async {
+///
+/// [timeRecordGuid] time_record的guid
+void finishTimeType(String timeRecordGuid) async {
   Database db = await createTable();
-  await db.rawUpdate('UPDATE time_intervals SET end = ? WHERE guid = ?', [
-    nowTimeStamp(),
-    guid,
-  ]);
-  List<Map> lists = await db.rawQuery(
-    'SELECT interval_guid FROM time_intervals where guid=?',
-    [guid],
+  await db.rawUpdate(
+    'UPDATE time_intervals SET end = ? WHERE guid = ? and end=-1;',
+    [nowTimeStamp(), timeRecordGuid],
   );
-  await db.rawUpdate('UPDATE time_record SET isFinish = 1 WHERE guid = ?', [
-    lists[0]["interval_guid"],
+  await db.rawUpdate('UPDATE time_record SET status=2 where guid=? ;', [
+    timeRecordGuid,
   ]);
 }
 
@@ -136,7 +163,7 @@ Future<int> findTimeRecord(String guid) async {
   num allTime = 0;
   Database db = await createTable();
   List<Map> lists = await db.rawQuery(
-    'SELECT * FROM time_record where guid=? and isFinish=True order by id desc;',
+    'SELECT * FROM time_record where guid=? and status!=2 order by id desc;',
     [guid],
   );
   for (var item in lists) {
@@ -155,12 +182,12 @@ Future<String> addTimeType(String guid) async {
   var uuid = const Uuid();
   String nowUuid = uuid.v4();
   await db.rawInsert(
-    'INSERT INTO time_record ( id, guid, comment,type_guid,isFinish ) VALUES ( NULL,?,?,?,0);',
+    'INSERT INTO time_record ( id, guid, comment,type_guid,status ) VALUES ( NULL,?,?,?,0);',
     [nowUuid, "", guid],
   );
   String intervalUuid = uuid.v4();
   await db.rawInsert(
-    "INSERT INTO time_intervals ( id, guid, [start], [end], interval_guid ) VALUES ( NULL, ?, ?, -1, ? );",
+    "INSERT INTO time_intervals ( id, guid, [start], [end], record_guid ) VALUES ( NULL, ?, ?, -1, ? );",
     [intervalUuid, nowTimeStamp(), nowUuid],
   );
   return nowUuid;
@@ -170,13 +197,16 @@ Future<String> addTimeType(String guid) async {
 Future<List<Widget>> findAllNoWork(BuildContext context) async {
   Database db = await createTable();
   List<Widget> result = [];
+
+  /// 查询所有没有结束的时间间隔
   List<Map> list = await db.rawQuery(
     'SELECT * FROM time_intervals where end=-1;',
   );
   for (var item in list) {
+    ///查询没有结束的时间间隔对应的时间类型
     List<Map> timeAll = await db.rawQuery(
-      'SELECT * FROM time_record where guid=? and isFinish=0;',
-      [item["interval_guid"]],
+      'SELECT * FROM time_record where guid=? and status!=2;',
+      [item["record_guid"]],
     );
     List<Map> typeTime = await db.rawQuery(
       'SELECT * FROM time_type where guid=?;',
@@ -198,8 +228,12 @@ Future<List<Widget>> findAllNoWork(BuildContext context) async {
           children: [
             IconButton(
               icon: const Icon(Icons.pause),
-              onPressed: () {
-                pauseTimeType(item["guid"]);
+              onPressed: () async {
+                if (await isTimeTypeRunning(item["guid"])) {
+                  pauseTimeType(item["guid"]);
+                } else {
+                  antiPauseTimeType(item["guid"]);
+                }
               },
             ),
             const SizedBox(width: 20),
