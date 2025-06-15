@@ -119,10 +119,11 @@ void pauseTimeType(String timeRecordGuid) async {
     TimeStatus.pause.index,
     timeRecordGuid,
   ]);
-  await db.rawUpdate(
-    'UPDATE time_intervals SET end = ? WHERE guid = ? and end=-1;',
-    [nowTimeStamp(), timeRecordGuid],
-  );
+  var lastTimeInterval = await findLastTimeInterval(timeRecordGuid);
+  await db.rawUpdate('UPDATE time_intervals SET end = ? WHERE guid = ?;', [
+    nowTimeStamp(),
+    lastTimeInterval["guid"],
+  ]);
 }
 
 /// 解除暂停某项
@@ -193,41 +194,71 @@ Future<String> addTimeType(String guid) async {
   return nowUuid;
 }
 
+///查询该记录的所有时间间隔的GUID
+Future<List<String>> findAllTimeIntervals(String recordGuid) async {
+  Database db = await createTable();
+  List<String> result = [];
+  List<Map> list = await db.rawQuery(
+    'SELECT * FROM time_intervals where record_guid=?;',
+    [recordGuid],
+  );
+  for (var item in list) {
+    result.add(item["guid"]);
+  }
+  return result;
+}
+
+///查询该记录的最后一个时间间隔的GUID
+Future<Map> findLastTimeInterval(String recordGuid) async {
+  Database db = await createTable();
+  List<Map> list = await db.rawQuery(
+    'SELECT * FROM time_intervals where record_guid=? order by start desc limit 1;',
+    [recordGuid],
+  );
+  if (list.isNotEmpty) {
+    return list[0];
+  }
+  return {};
+}
+
 /// 读取所有正在进行的
 Future<List<Widget>> findAllNoWork(BuildContext context) async {
   Database db = await createTable();
   List<Widget> result = [];
 
-  /// 查询所有没有结束的时间间隔
+  ///查询所有没有结束的时间记录
   List<Map> list = await db.rawQuery(
-    'SELECT * FROM time_intervals where end=-1;',
+    'SELECT * FROM time_record where status!=2;',
   );
   for (var item in list) {
-    ///查询没有结束的时间间隔对应的时间类型
-    List<Map> timeAll = await db.rawQuery(
-      'SELECT * FROM time_record where guid=? and status!=2;',
-      [item["record_guid"]],
-    );
-    List<Map> typeTime = await db.rawQuery(
+    List<Map> timeType = await db.rawQuery(
       'SELECT * FROM time_type where guid=?;',
-      [timeAll[0]["type_guid"]],
+      [item["type_guid"]],
     );
+    Map lastTimeInterval = await findLastTimeInterval(item["guid"]);
+    int endTime = nowTimeStamp();
+    var showIcon = const Icon(Icons.pause);
+    if (item["status"] == TimeStatus.pause.index) {
+      endTime = lastTimeInterval["end"];
+      showIcon = const Icon(Icons.play_arrow);
+    }
+
     result.add(
       ListTile(
         leading: await returnIconMaterial(
-          typeTime[0]["imageId"],
-          typeTime[0]["A"],
-          typeTime[0]["R"],
-          typeTime[0]["G"],
-          typeTime[0]["B"],
+          timeType[0]["imageId"],
+          timeType[0]["A"],
+          timeType[0]["R"],
+          timeType[0]["G"],
+          timeType[0]["B"],
         ),
-        title: Text(typeTime[0]["name"]),
-        subtitle: Text(timeLagNow(item["start"])),
+        title: Text(timeType[0]["name"]),
+        subtitle: Text(timeLagOther(lastTimeInterval["start"], endTime)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.pause),
+              icon: showIcon,
               onPressed: () async {
                 if (await isTimeTypeRunning(item["guid"])) {
                   pauseTimeType(item["guid"]);

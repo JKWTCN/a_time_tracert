@@ -51,3 +51,27 @@ String timeLagNow(milliSecond) {
   }
   return "$hourStr:$minStr:$secStr";
 }
+
+///两者相差的时分秒
+String timeLagOther(oneMilliSecond, otherMilliSecond) {
+  var t = DateTime.fromMillisecondsSinceEpoch(otherMilliSecond);
+  var s = DateTime.fromMillisecondsSinceEpoch(oneMilliSecond);
+  var timeLag = t.difference(s); //时间戳进行比较
+  String hourStr, minStr, secStr;
+  if (timeLag.inHours < 10) {
+    hourStr = "0${timeLag.inHours}";
+  } else {
+    hourStr = "${timeLag.inHours}";
+  }
+  if (timeLag.inMinutes % 60 < 10) {
+    minStr = "0${timeLag.inMinutes % 60}";
+  } else {
+    minStr = "${timeLag.inMinutes % 60}";
+  }
+  if (timeLag.inSeconds % 60 < 10) {
+    secStr = "0${timeLag.inSeconds % 60}";
+  } else {
+    secStr = "${timeLag.inSeconds % 60}";
+  }
+  return "$hourStr:$minStr:$secStr";
+}

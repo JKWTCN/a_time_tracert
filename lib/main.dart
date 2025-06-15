@@ -8,7 +8,7 @@ import 'recordPage/record_page.dart';
 import 'dart:developer' as developer;
 
 void main() async {
-  // if (Platform.isWindows || Platform.isLinux) {
+  // if (Platform.isWindows || Platfo=rm.isLinux) {
 
   // }
   sqfliteFfiInit();
